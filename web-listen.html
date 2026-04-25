@@ -28,6 +28,9 @@
     <h1>Listen on your phone (no VPN app)</h1>
     <p class="lead">This listen page is a <strong>normal public website</strong>. You do <strong>not</strong> need Tailscale (or any VPN) on your phone to open it. The only technical rule: the <strong>stream</strong> URL must start with <code>https://</code> because this page is served over HTTPS — otherwise the browser blocks in-page playback.</p>
 
+    <h2>0. Repo on the Mac mini</h2>
+    <p>If <code>cd ~/personal-radio</code> fails, clone first (SSH if the repo is private): <code>git clone git@github.com:bskthefirst/personal-radio.git ~/personal-radio</code> — see the private repo file <code>docs/MINI_QUICKSTART.md</code> after you pull on another machine.</p>
+
     <h2>1. Give Icecast a public HTTPS URL (Cloudflare)</h2>
     <p>On the Mac mini (Terminal or SSH from your laptop), with Icecast already on port 8000, either run the helper in the station repo after <code>git pull</code>:</p>
     <pre>chmod +x mac/start_public_quick_tunnel.sh &amp;&amp; ./mac/start_public_quick_tunnel.sh</pre>

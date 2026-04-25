@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KJPH-FM | Listen in the browser (phone)</title>
+  <style>
+    :root { --bg: #0a0a0c; --fg: #e8e6e3; --muted: #6b6a66; --accent: #c4a35a; --line: #222; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg);
+      font-family: ui-sans-serif, system-ui, "Helvetica Neue", sans-serif; line-height: 1.55; }
+    main { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+    h1 { font-size: 1.35rem; font-weight: 500; margin: 0 0 0.5rem; }
+    p.lead { color: var(--muted); font-size: 0.95rem; margin: 0 0 1.5rem; }
+    h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 1.75rem 0 0.5rem; }
+    p, li { font-size: 0.9rem; color: #c7c4bf; }
+    code { font-size: 0.88em; background: #121214; padding: 0.12em 0.35em; border-radius: 3px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    pre { background: #121214; border: 1px solid var(--line); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.82rem; overflow-x: auto; color: #b5b2ac; }
+    ol { padding-left: 1.2rem; }
+    li { margin: 0.35rem 0; }
+    .back { margin-bottom: 1.5rem; font-size: 0.88rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="back"><a href="index.html">← back to station</a></p>
+    <h1>Listen on your phone (GitHub Pages + Mac mini)</h1>
+    <p class="lead">The station page is static HTML. Your phone loads it over <strong>HTTPS</strong>, so the stream and API URLs must not be blocked as “mixed content.”</p>
+
+    <h2>1. HTTPS stream (Tailscale Serve)</h2>
+    <p>On the Mac mini, forward Icecast (port 8000) through Tailscale’s HTTPS proxy so the mount is an <code>https://</code> URL (only on your tailnet unless you use Funnel):</p>
+    <pre>tailscale serve --bg http://127.0.0.1:8000</pre>
+    <p>Then your stream may look like <code>https://suhyun.tailf2c209.ts.net/stream</code> (exact URL is shown by the <code>serve</code> command; use your machine’s MagicDNS name). Open the Tailscale app on the phone so you are on the same tailnet.</p>
+
+    <h2>2. Now playing on the static site</h2>
+    <p><code>GET /now-playing</code> on port 8001 is usually <code>http://</code>, which the browser will <em>not</em> fetch from an <code>https://</code> GitHub Page. Options:</p>
+    <ol>
+      <li>Leave API blank and place a <code>now_playing.json</code> next to <code>index.html</code> (updated by your sync from the feeder’s <code>output/now_playing.json</code>, e.g. into your <code>bskthefirst.github.io</code> repo), or</li>
+      <li>Point “Now playing JSON” to a full <code>https://</code> URL that you host, or</li>
+      <li>Expose the API over HTTPS (reverse proxy or tunnel) and paste that base URL in connection settings.</li>
+    </ol>
+
+    <h2>3. Enable GitHub Pages</h2>
+    <p>Repository <strong>Settings → Pages → Build and deployment</strong>: source <strong>Deploy from a branch</strong> with folder <code>/docs</code> on <code>main</code>, or use the root of a <code>username.github.io</code> repo and copy these files there. Your site URL will look like <code>https://&lt;user&gt;.github.io/&lt;repo&gt;/</code>.</p>
+
+    <h2>4. Bookmark on your phone</h2>
+    <p>Open the deployed <a href="index.html">index</a>, expand <strong>connection</strong>, paste the HTTPS stream URL, save, then add the page to the home screen or bookmarks. Optional: share a link with query parameters, e.g. <code>?stream=https%3A%2F%2F…%2Fstream&amp;np=now_playing.json</code>.</p>
+  </main>
+</body>
+</html>

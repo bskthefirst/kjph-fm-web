@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KJPH-FM | Personal frequency</title>
+  <style>
+    :root {
+      --bg: #0a0a0c;
+      --fg: #e8e6e3;
+      --muted: #6b6a66;
+      --accent: #c4a35a;
+      --line: #222;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: ui-sans-serif, system-ui, "Helvetica Neue", sans-serif;
+      line-height: 1.55;
+    }
+    main { max-width: 42rem; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+    h1 { font-size: 1.85rem; font-weight: 500; letter-spacing: 0.06em; margin: 0 0 0.35rem; }
+    .tagline { color: var(--muted); font-size: 0.92rem; margin: 0 0 1.75rem; }
+    .hero-row {
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.75rem 1.25rem;
+      margin-bottom: 1.5rem; font-size: 0.9rem;
+    }
+    .status-pill {
+      font-variant-numeric: tabular-nums;
+      font-size: 0.8rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+    }
+    .status-pill.online { color: #7d9; border-color: #2a4; }
+    .status-pill.offline { color: #c77; border-color: #633; }
+    .meter {
+      flex: 1; min-width: 12rem; height: 4px; background: #1a1a1d; border-radius: 2px; overflow: hidden;
+    }
+    .meter-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--accent), #8a7a50);
+      transition: width 0.4s ease;
+    }
+    .now-line { color: var(--accent); font-size: 0.88rem; max-width: 100%; }
+    details.panel {
+      border: 1px solid var(--line); border-radius: 8px; margin: 0.65rem 0;
+      padding: 0; background: rgba(255,255,255,0.02);
+    }
+    details.panel > summary {
+      list-style: none; cursor: pointer;
+      padding: 0.85rem 1rem;
+      font-size: 0.88rem;
+      color: var(--fg);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    details.panel > summary::-webkit-details-marker { display: none; }
+    details.panel > summary::after { content: "+"; color: var(--accent); font-weight: 300; }
+    details.panel[open] > summary::after { content: "–"; }
+    .panel-body { padding: 0 1rem 1rem; font-size: 0.86rem; color: #c7c4bf; border-top: 1px solid var(--line); }
+    .panel-body pre { margin: 0.5rem 0 0; white-space: pre-wrap; font-family: inherit; color: #b5b2ac; }
+    label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.35rem; }
+    textarea {
+      width: 100%; min-height: 5rem; padding: 0.6rem 0.75rem;
+      background: #121214; border: 1px solid var(--line); color: var(--fg);
+      border-radius: 6px; font: inherit; resize: vertical;
+    }
+    button {
+      margin-top: 0.5rem; padding: 0.45rem 1rem;
+      background: var(--accent); color: #111; border: none; border-radius: 6px;
+      font: inherit; font-size: 0.85rem; cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .msg-hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.4rem; }
+    .ok { color: #7a9; }
+    .err { color: #c88; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer { margin-top: 2.5rem; font-size: 0.78rem; color: var(--muted); }
+    code { font-size: 0.9em; background: #121214; padding: 0.1em 0.35em; border-radius: 3px; }
+    .player-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 1.1rem 1rem 1.15rem;
+      margin: 0 0 1.5rem;
+      background: linear-gradient(165deg, rgba(196, 163, 90, 0.06) 0%, rgba(0,0,0,0) 55%);
+    }
+    .player-card h2 {
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); margin: 0 0 0.9rem;
+    }
+    .player-audio {
+      width: 100%;
+      height: 40px;
+      border-radius: 6px;
+      margin-top: 0.5rem;
+    }
+    .player-hint, .warn {
+      font-size: 0.8rem; color: var(--muted);
+      margin: 0.65rem 0 0; line-height: 1.45;
+    }
+    .warn {
+      color: #c9a;
+      border: 1px solid #633;
+      border-radius: 6px;
+      padding: 0.6rem 0.75rem;
+      background: rgba(120, 40, 30, 0.15);
+    }
+    .warn a { text-decoration: underline; }
+    .row-input {
+      display: block; width: 100%;
+      margin-top: 0.45rem; padding: 0.5rem 0.65rem;
+      background: #121214; border: 1px solid var(--line);
+      color: var(--fg); border-radius: 6px; font: inherit; font-size: 0.85rem;
+    }
+    .row-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .btn-ghost {
+      background: transparent; color: var(--accent);
+      border: 1px solid var(--line);
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>KJPH-FM</h1>
+    <p class="tagline">the frequency between frequencies</p>
+
+    <section class="player-card" aria-label="Live stream">
+      <h2>Listen live</h2>
+      <p class="now-line" id="play-line" style="margin:0; font-size:0.9rem; color:var(--fg)">set stream URL in connection settings (below)</p>
+      <button type="button" class="btn-ghost" id="play-open" style="display:none; margin-top:0.5rem" hidden>open stream in new tab</button>
+      <audio class="player-audio" id="stream-a" controls playsinline></audio>
+      <p class="player-hint" id="play-hint">
+        <span id="embed-ok" style="display:none">Play works in-page when the stream uses HTTPS and your phone can reach it (Tailscale app on, or public tunnel).</span>
+        <span id="embed-na" style="display:none">This page is HTTPS, so the player needs an <strong>https://</strong> stream URL. Use a Tailscale Serve URL (Mac mini) or Cloudflare Tunnel — see <a href="web-listen.html">set up the stream</a> — or tap “open in new tab” to try plain HTTP.</span>
+      </p>
+      <p class="warn" id="mixed-warn" style="display:none" role="status"></p>
+    </section>
+
+    <div class="hero-row">
+      <span id="pill" class="status-pill offline">offline</span>
+      <div class="meter" title="Rough activity (listener count)"><div id="fill" class="meter-fill"></div></div>
+    </div>
+    <p class="now-line">
+      <span id="clk">--:--</span>
+      <span> · </span>
+      <span id="st">no signal</span>
+    </p>
+    <p class="now-line" id="sub" style="margin-top:0.4rem; font-size:0.8rem; color:var(--muted)"></p>
+
+    <details class="panel" id="d-conn" open>
+      <summary>connection (stream, API, now playing)</summary>
+      <div class="panel-body">
+        <p style="margin:0 0 0.75rem">For <strong>GitHub Pages (HTTPS)</strong> on your phone: the stream and optional metadata must be reachable without mixed-content blocking. Set an <strong>HTTPS</strong> mount URL, or open the stream in a new tab. See <a href="web-listen.html">listen in the browser</a> for Tailscale Serve and GitHub Pages.</p>
+        <label for="in-stream">Stream URL (Icecast mount, usually <code>…/stream</code>)</label>
+        <input type="url" class="row-input" id="in-stream" inputmode="url" autocomplete="off" placeholder="https://your-mac.tail…ts.net/stream" />
+        <label for="in-api" style="margin-top:0.75rem">API base (optional, must be <code>https://</code> on this page; leave blank to use only static now playing)</label>
+        <input type="url" class="row-input" id="in-api" inputmode="url" autocomplete="off" placeholder="https://…:8001 or http:// (local only)" />
+        <label for="in-np" style="margin-top:0.75rem">Now playing JSON (optional)</label>
+        <input type="text" class="row-input" id="in-np" inputmode="url" autocomplete="off" placeholder="now_playing.json or full https URL" />
+        <div class="row-actions">
+          <button type="button" id="btn-save-conn">save to this device</button>
+          <button type="button" class="btn-ghost" id="btn-clear-conn">clear saved</button>
+        </div>
+        <p class="msg-hint" id="conn-saved" style="margin-top:0.5rem; min-height:1.1rem"></p>
+        <p class="msg-hint" style="margin:0.6rem 0 0">Query shortcuts: <code>?stream=</code> <code>?api=</code> <code>?np=</code> (bookmark the page after setting).</p>
+      </div>
+    </details>
+
+    <details class="panel" id="d-schedule">
+      <summary>schedule</summary>
+      <div class="panel-body">
+        <p style="margin:0 0 0.5rem">Local time. Off air: silence 02:00–06:00.</p>
+        <pre>00:00–02:00  深夜放送 (JP)
+02:00–06:00  Off Air
+06:00–07:00  Daybreak
+07:00–09:00  Eagle Standard
+09:00–11:00  Static Front
+11:00–13:00  The Mirror
+13:00–16:00  Crosswind
+16:00–19:00  The Workshop
+19:00–22:00  Sunset Sessions
+22:00–00:00  深夜放送 (JP)</pre>
+      </div>
+    </details>
+
+    <details class="panel" id="d-msg">
+      <summary>send a message</summary>
+      <div class="panel-body">
+        <p style="margin-top:0">Listener queue: <code>~/.writ/messages.json</code> (if you use the listener pipeline).</p>
+        <label for="m">message</label>
+        <textarea id="m" maxlength="280" placeholder="(max 280 characters)"></textarea>
+        <button type="button" id="send">Send</button>
+        <p id="sendout" class="msg-hint"></p>
+      </div>
+    </details>
+
+    <details class="panel" id="d-about">
+      <summary>about</summary>
+      <div class="panel-body">
+        <p style="margin-top:0">KJPH-FM: private AI talk radio. Claude scripts, Kokoro TTS, ezstream → Icecast. API on port 8001: <code>GET /now-playing</code>, <code>GET /health</code>, <code>GET /schedule</code>, <code>POST /message</code> when the feeder is running.</p>
+      </div>
+    </details>
+
+    <footer>MIT. Private project — do not mirror résumé or PII in public forks.</footer>
+  </main>
+  <script>
+    const LS = { stream: 'kjph_stream', api: 'kjph_api', np: 'kjph_np' };
+    const pageIsHttps = location.protocol === 'https:';
+
+    function getConn() {
+      const p = new URLSearchParams(location.search);
+      const stream = (p.get('stream') || localStorage.getItem(LS.stream) || '').trim();
+      const defaultApi = pageIsHttps ? '' : 'http://127.0.0.1:8001';
+      const api = (p.get('api') || localStorage.getItem(LS.api) || defaultApi).replace(/\/$/, '');
+      const np = (p.get('np') || localStorage.getItem(LS.np) || 'now_playing.json').trim();
+      return { stream, api, np };
+    }
+
+    function canFetchUrl(url) {
+      if (!url) return false;
+      if (pageIsHttps) return url.startsWith('https:');
+      return true;
+    }
+
+    function canEmbedStreamUrl(url) {
+      if (!url) return false;
+      if (url.startsWith('https:')) return true;
+      if (!pageIsHttps) return true;
+      return false;
+    }
+
+    const audio = document.getElementById('stream-a');
+    const openBtn = document.getElementById('play-open');
+    const mixedWarn = document.getElementById('mixed-warn');
+    const playLine = document.getElementById('play-line');
+    const embOk = document.getElementById('embed-ok');
+    const embNa = document.getElementById('embed-na');
+
+    function applyStream() {
+      const { stream } = getConn();
+      const wantOpen = !canEmbedStreamUrl(stream);
+      audio.pause();
+      if (stream && !wantOpen) {
+        try {
+          audio.removeAttribute('src');
+          audio.src = stream;
+          audio.load();
+        } catch (e) {
+          console.warn(e);
+        }
+        mixedWarn.style.display = 'none';
+        openBtn.style.display = 'none';
+        openBtn.hidden = true;
+        playLine.textContent = 'Use the play control above, or set a stream in connection settings.';
+        embOk.style.display = 'inline';
+        embNa.style.display = 'none';
+      } else if (stream) {
+        audio.removeAttribute('src');
+        openBtn.style.display = 'block';
+        openBtn.hidden = false;
+        openBtn.onclick = function () { window.open(stream, '_blank', 'noopener,noreferrer'); };
+        mixedWarn.style.display = 'block';
+        mixedWarn.innerHTML = 'This site is served over <strong>HTTPS</strong> and the stream URL is plain <strong>HTTP</strong>, so the in-page player cannot start (browser security). Use <em>open stream in new tab</em> or set an <strong>https://</strong> stream (Tailscale Serve on the Mac mini, or a tunnel).';
+        playLine.textContent = 'Stream URL is HTTP — use the button or switch to an HTTPS stream URL.';
+        embOk.style.display = 'none';
+        embNa.style.display = 'inline';
+      } else {
+        audio.removeAttribute('src');
+        openBtn.style.display = 'none';
+        openBtn.hidden = true;
+        mixedWarn.style.display = 'none';
+        playLine.textContent = 'Set the stream URL in connection settings (below), or add ?stream= to the URL.';
+        embOk.style.display = 'none';
+        embNa.style.display = pageIsHttps ? 'inline' : 'none';
+      }
+    }
+
+    const inStream = document.getElementById('in-stream');
+    const inApi = document.getElementById('in-api');
+    const inNp = document.getElementById('in-np');
+    (function initInputs() {
+      const c = getConn();
+      inStream.value = c.stream;
+      inApi.value = c.api;
+      inNp.value = c.np;
+    })();
+
+    function saveConn() {
+      const stream = inStream.value.trim();
+      const apiRaw = inApi.value.trim();
+      const np = inNp.value.trim() || 'now_playing.json';
+      if (stream) localStorage.setItem(LS.stream, stream); else localStorage.removeItem(LS.stream);
+      if (apiRaw) localStorage.setItem(LS.api, apiRaw); else localStorage.removeItem(LS.api);
+      if (inNp.value.trim()) localStorage.setItem(LS.np, inNp.value.trim()); else localStorage.removeItem(LS.np);
+      const q = new URLSearchParams();
+      if (stream) q.set('stream', stream);
+      if (apiRaw) q.set('api', apiRaw);
+      if (inNp.value.trim()) q.set('np', inNp.value.trim());
+      const qs = q.toString();
+      history.replaceState(null, '', qs ? (location.pathname + '?' + qs) : location.pathname);
+      document.getElementById('conn-saved').textContent = 'Saved to this device and URL bar.';
+      document.getElementById('conn-saved').className = 'msg-hint ok';
+      applyStream();
+      updateSendState();
+    }
+
+    document.getElementById('btn-save-conn').addEventListener('click', saveConn);
+
+    document.getElementById('btn-clear-conn').addEventListener('click', function () {
+      [LS.stream, LS.api, LS.np].forEach(function (k) { localStorage.removeItem(k); });
+      inStream.value = '';
+      inApi.value = pageIsHttps ? '' : 'http://127.0.0.1:8001';
+      inNp.value = 'now_playing.json';
+      history.replaceState(null, '', location.pathname);
+      document.getElementById('conn-saved').textContent = 'Cleared. Reload to drop ?query in shared links.';
+      document.getElementById('conn-saved').className = 'msg-hint';
+      applyStream();
+      updateSendState();
+    });
+
+    function setClock() {
+      const d = new Date();
+      document.getElementById('clk').textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    setInterval(setClock, 1000);
+    setClock();
+
+    function resolveNpUrl(np) {
+      if (!np) return '';
+      if (np.startsWith('http://') || np.startsWith('https://')) return np;
+      if (np.startsWith('/')) return location.origin + np;
+      return new URL(np, location.href).href;
+    }
+
+    async function fetchJsonNp(npPath) {
+      const u = resolveNpUrl(npPath);
+      if (pageIsHttps && u.startsWith('http:')) return null;
+      const r = await fetch(u + (u.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return null;
+      return r.json();
+    }
+
+    async function tick() {
+      const { api, np } = getConn();
+      const pill = document.getElementById('pill');
+      const st = document.getElementById('st');
+      const sub = document.getElementById('sub');
+      const fill = document.getElementById('fill');
+      const useApi = canFetchUrl(api);
+
+      function applyNp(npData) {
+        if (!npData) return false;
+        st.textContent = (npData.show || '—') + ' — ' + (npData.track || '—');
+        sub.textContent = (npData.host || '') + (npData.show_id ? ' · ' + npData.show_id : '');
+        const L = Math.min(100, 8 + (npData.listeners || 0) * 4);
+        fill.style.width = L + '%';
+        return true;
+      }
+
+      if (useApi) {
+        try {
+          const [hp, npr] = await Promise.all([
+            fetch(api + '/health', { method: 'GET' }).then(function (r) { return r.ok ? r.json() : null; }),
+            fetch(api + '/now-playing', { method: 'GET' }).then(function (r) { return r.ok ? r.json() : null; }),
+          ]);
+          if (hp && (hp.status === 'healthy' || hp.components)) {
+            const ice = hp.components && hp.components.icecast;
+            const str = hp.components && hp.components.streamer;
+            const up = ice && ice.status === 'up' && str && str.status === 'up';
+            pill.textContent = up ? 'online' : 'degraded';
+            pill.className = 'status-pill ' + (up ? 'online' : 'offline');
+          } else {
+            pill.textContent = 'offline';
+            pill.className = 'status-pill offline';
+          }
+          if (npr && applyNp(npr)) return;
+        } catch (e) {
+          /* fall through to static */
+        }
+      }
+
+      // Static now_playing.json (GitHub Pages: place file next to index, or use full https URL)
+      try {
+        const staticNp = await fetchJsonNp(np);
+        if (staticNp && applyNp(staticNp)) {
+          pill.textContent = 'on air (static)';
+          pill.className = 'status-pill online';
+          if (!useApi) sub.textContent = (staticNp.host || '') + (staticNp.show_id ? ' · ' + staticNp.show_id : '') + ' · from ' + (np || 'now_playing.json');
+          return;
+        }
+      } catch (e) { /* */ }
+
+      pill.textContent = 'offline';
+      pill.className = 'status-pill offline';
+      st.textContent = "can't read now playing";
+      if (pageIsHttps && !useApi) {
+        sub.textContent = 'On HTTPS, copy now_playing.json to this site (same folder as this page) or set ?np=https://…/now_playing.json, or set an https API in connection settings.';
+      } else {
+        sub.textContent = useApi ? 'no data from ' + api : 'set ?api=, save local API, or deploy now_playing.json';
+      }
+      fill.style.width = '4%';
+    }
+
+    setInterval(tick, 8000);
+    tick();
+    applyStream();
+
+    const sendBtn = document.getElementById('send');
+    function updateSendState() {
+      const { api } = getConn();
+      const ok = canFetchUrl(api);
+      sendBtn.disabled = !ok;
+      sendBtn.title = ok ? '' : 'Needs https:// API when this page is https:// (or use a local file / http host).';
+    }
+    updateSendState();
+
+    document.getElementById('send').addEventListener('click', async function () {
+      const { api } = getConn();
+      const out = document.getElementById('sendout');
+      if (!canFetchUrl(api)) {
+        out.textContent = 'API must be https:// for this page.';
+        out.className = 'msg-hint err';
+        return;
+      }
+      const body = (document.getElementById('m').value || '').trim();
+      if (body.length < 3) { out.textContent = 'Type at least 3 characters.'; out.className = 'msg-hint err'; return; }
+      out.textContent = 'sending…';
+      try {
+        const r = await fetch(api + '/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: body }),
+        });
+        const j = await r.json().catch(function () { return {}; });
+        if (r.status === 200) {
+          out.textContent = 'received.';
+          out.className = 'msg-hint ok';
+          document.getElementById('m').value = '';
+        } else {
+          out.textContent = (j && j.error) || r.status + ' ' + r.statusText;
+          out.className = 'msg-hint err';
+        }
+      } catch (e) {
+        out.textContent = String(e);
+        out.className = 'msg-hint err';
+      }
+    });
+  </script>
+</body>
+</html>

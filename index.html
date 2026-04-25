@@ -37,6 +37,7 @@
     .status-pill.online { color: #7d9; border-color: #2a4; }
     .status-pill.offline { color: #c77; border-color: #633; }
     .status-pill.idle { color: #a8a090; border-color: #4a4a44; }
+    .status-pill.nodata { color: #9a9; border-color: #353; }
     .meter {
       flex: 1; min-width: 12rem; height: 4px; background: #1a1a1d; border-radius: 2px; overflow: hidden;
     }
@@ -157,7 +158,7 @@
       <div class="panel-body">
         <p style="margin:0 0 0.75rem">You do <strong>not</strong> need Tailscale on your phone — this site is already public. The stream URL must be <strong>https://</strong> (use <a href="web-listen.html">Cloudflare Quick Tunnel</a> on the Mac mini, or any public HTTPS reverse proxy to Icecast). “Now playing” is optional.</p>
         <label for="in-stream">Stream URL (Icecast mount, usually <code>…/stream</code>)</label>
-        <input type="url" class="row-input" id="in-stream" inputmode="url" autocomplete="off" placeholder="https://….trycloudflare.com/stream" />
+        <input type="text" class="row-input" id="in-stream" inputmode="url" autocomplete="off" placeholder="paste full URL from Mac: cloudflared (ends in .trycloudflare.com/stream)" />
         <label for="in-api" style="margin-top:0.75rem">API base (optional, must be <code>https://</code> on this page; leave blank to use only static now playing)</label>
         <input type="url" class="row-input" id="in-api" inputmode="url" autocomplete="off" placeholder="https://…:8001 or http:// (local only)" />
         <label for="in-np" style="margin-top:0.75rem">Now playing JSON (optional)</label>
@@ -234,6 +235,23 @@
       return false;
     }
 
+    function isPlaceholderStreamUrl(url) {
+      if (!url || url.trim().length < 10) return true;
+      var u = url.trim();
+      if (/\.\.\.|…/u.test(u)) return true;
+      if (/placeholder|example\.com|localhost|127\.0\.0\.1|your-mac/i.test(u)) return true;
+      try {
+        var p = new URL(u);
+        if (!p.hostname || p.hostname.length < 4) return true;
+        if (p.protocol !== 'https:' && pageIsHttps) return true;
+      } catch (e) { return true; }
+      return false;
+    }
+
+    function isGoodStreamForUi(url) {
+      return url && canEmbedStreamUrl(url) && !isPlaceholderStreamUrl(url);
+    }
+
     const audio = document.getElementById('stream-a');
     const openBtn = document.getElementById('play-open');
     const mixedWarn = document.getElementById('mixed-warn');
@@ -243,6 +261,18 @@
 
     function applyStream() {
       const { stream } = getConn();
+      if (stream && isPlaceholderStreamUrl(stream)) {
+        audio.pause();
+        audio.removeAttribute('src');
+        openBtn.style.display = 'none';
+        openBtn.hidden = true;
+        mixedWarn.style.display = 'block';
+        mixedWarn.innerHTML = 'That field still looks like the <strong>help example</strong> (e.g. <code>…</code> in the host). On the <strong>Mac mini</strong> run <code>./mac/start_public_quick_tunnel.sh</code> while the station is on, then copy the <strong>full</strong> <code>https://something.trycloudflare.com</code> line and save <code>…/stream</code> here.';
+        playLine.textContent = 'Clear the box and paste the real URL that cloudflared printed.';
+        embOk.style.display = 'none';
+        embNa.style.display = 'none';
+        return;
+      }
       const wantOpen = !canEmbedStreamUrl(stream);
       audio.pause();
       if (stream && !wantOpen) {
@@ -395,19 +425,27 @@
         }
       } catch (e) { /* */ }
 
-      if (stream && canEmbedStreamUrl(stream)) {
-        pill.textContent = 'idle';
+      if (isGoodStreamForUi(stream)) {
+        pill.textContent = 'ready';
         pill.className = 'status-pill idle';
-        st.textContent = 'now playing unavailable (optional)';
-        sub.textContent = 'If you saved an HTTPS stream URL, press play above. Optional metadata: second tunnel to :8001, hosted now_playing.json, or see web-listen.html.';
-        fill.style.width = '10%';
+        st.textContent = 'now playing: not set up (optional)';
+        sub.textContent = 'Press play above for audio. “Offline” was misleading — the stream and song titles are separate. To show titles, add a tunnel to :8001 or host now_playing.json.';
+        fill.style.width = '12%';
         return;
       }
-      pill.textContent = 'offline';
-      pill.className = 'status-pill offline';
+      if (stream && isPlaceholderStreamUrl(stream)) {
+        pill.textContent = 'needs URL';
+        pill.className = 'status-pill nodata';
+        st.textContent = 'not a real stream address yet';
+        sub.textContent = 'Replace the help-text example with the full URL from cloudflared (Mac mini), then save.';
+        fill.style.width = '4%';
+        return;
+      }
+      pill.textContent = 'no metadata';
+      pill.className = 'status-pill nodata';
       st.textContent = 'no now playing data';
       if (pageIsHttps && !useApi) {
-        sub.textContent = 'Set an HTTPS stream URL first (see web-listen.html). Then optionally add now_playing.json or an https API for titles.';
+        sub.textContent = 'This badge is only about song titles, not the audio. Set a real https stream URL above, or see web-listen.html.';
       } else {
         sub.textContent = useApi ? 'no data from ' + api : 'set ?api= or deploy now_playing.json for titles';
       }

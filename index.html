@@ -36,6 +36,7 @@
     }
     .status-pill.online { color: #7d9; border-color: #2a4; }
     .status-pill.offline { color: #c77; border-color: #633; }
+    .status-pill.idle { color: #a8a090; border-color: #4a4a44; }
     .meter {
       flex: 1; min-width: 12rem; height: 4px; background: #1a1a1d; border-radius: 2px; overflow: hidden;
     }
@@ -134,8 +135,8 @@
       <button type="button" class="btn-ghost" id="play-open" style="display:none; margin-top:0.5rem" hidden>open stream in new tab</button>
       <audio class="player-audio" id="stream-a" controls playsinline></audio>
       <p class="player-hint" id="play-hint">
-        <span id="embed-ok" style="display:none">Play works in-page when the stream uses HTTPS and your phone can reach it (Tailscale app on, or public tunnel).</span>
-        <span id="embed-na" style="display:none">This page is HTTPS, so the player needs an <strong>https://</strong> stream URL. Use a Tailscale Serve URL (Mac mini) or Cloudflare Tunnel — see <a href="web-listen.html">set up the stream</a> — or tap “open in new tab” to try plain HTTP.</span>
+        <span id="embed-ok" style="display:none">Play works in-page when the stream URL is <strong>https://</strong> and reachable from the internet (e.g. Cloudflare Tunnel from your Mac mini). No VPN app needed on the phone.</span>
+        <span id="embed-na" style="display:none">This page is HTTPS, so the in-page player needs an <strong>https://</strong> stream URL (browsers block plain <code>http://</code> here). On the Mac mini run <code>cloudflared tunnel --url http://127.0.0.1:8000</code>, then paste <code>https://…trycloudflare.com/stream</code> — see <a href="web-listen.html">set up the stream</a> — or tap “open in new tab” to try HTTP (often fails on mobile).</span>
       </p>
       <p class="warn" id="mixed-warn" style="display:none" role="status"></p>
     </section>
@@ -154,9 +155,9 @@
     <details class="panel" id="d-conn" open>
       <summary>connection (stream, API, now playing)</summary>
       <div class="panel-body">
-        <p style="margin:0 0 0.75rem">For <strong>GitHub Pages (HTTPS)</strong> on your phone: the stream and optional metadata must be reachable without mixed-content blocking. Set an <strong>HTTPS</strong> mount URL, or open the stream in a new tab. See <a href="web-listen.html">listen in the browser</a> for Tailscale Serve and GitHub Pages.</p>
+        <p style="margin:0 0 0.75rem">You do <strong>not</strong> need Tailscale on your phone — this site is already public. The stream URL must be <strong>https://</strong> (use <a href="web-listen.html">Cloudflare Quick Tunnel</a> on the Mac mini, or any public HTTPS reverse proxy to Icecast). “Now playing” is optional.</p>
         <label for="in-stream">Stream URL (Icecast mount, usually <code>…/stream</code>)</label>
-        <input type="url" class="row-input" id="in-stream" inputmode="url" autocomplete="off" placeholder="https://your-mac.tail…ts.net/stream" />
+        <input type="url" class="row-input" id="in-stream" inputmode="url" autocomplete="off" placeholder="https://….trycloudflare.com/stream" />
         <label for="in-api" style="margin-top:0.75rem">API base (optional, must be <code>https://</code> on this page; leave blank to use only static now playing)</label>
         <input type="url" class="row-input" id="in-api" inputmode="url" autocomplete="off" placeholder="https://…:8001 or http:// (local only)" />
         <label for="in-np" style="margin-top:0.75rem">Now playing JSON (optional)</label>
@@ -264,7 +265,7 @@
         openBtn.hidden = false;
         openBtn.onclick = function () { window.open(stream, '_blank', 'noopener,noreferrer'); };
         mixedWarn.style.display = 'block';
-        mixedWarn.innerHTML = 'This site is served over <strong>HTTPS</strong> and the stream URL is plain <strong>HTTP</strong>, so the in-page player cannot start (browser security). Use <em>open stream in new tab</em> or set an <strong>https://</strong> stream (Tailscale Serve on the Mac mini, or a tunnel).';
+        mixedWarn.innerHTML = 'This site is <strong>HTTPS</strong> but the stream URL is plain <strong>HTTP</strong>, so the in-page player cannot start. Use <em>open stream in new tab</em> or set an <strong>https://</strong> URL from <a href="web-listen.html">Cloudflare Tunnel</a> (one command on the Mac mini).';
         playLine.textContent = 'Stream URL is HTTP — use the button or switch to an HTTPS stream URL.';
         embOk.style.display = 'none';
         embNa.style.display = 'inline';
@@ -345,7 +346,7 @@
     }
 
     async function tick() {
-      const { api, np } = getConn();
+      const { api, np, stream } = getConn();
       const pill = document.getElementById('pill');
       const st = document.getElementById('st');
       const sub = document.getElementById('sub');
@@ -394,13 +395,21 @@
         }
       } catch (e) { /* */ }
 
+      if (stream && canEmbedStreamUrl(stream)) {
+        pill.textContent = 'idle';
+        pill.className = 'status-pill idle';
+        st.textContent = 'now playing unavailable (optional)';
+        sub.textContent = 'If you saved an HTTPS stream URL, press play above. Optional metadata: second tunnel to :8001, hosted now_playing.json, or see web-listen.html.';
+        fill.style.width = '10%';
+        return;
+      }
       pill.textContent = 'offline';
       pill.className = 'status-pill offline';
-      st.textContent = "can't read now playing";
+      st.textContent = 'no now playing data';
       if (pageIsHttps && !useApi) {
-        sub.textContent = 'On HTTPS, copy now_playing.json to this site (same folder as this page) or set ?np=https://…/now_playing.json, or set an https API in connection settings.';
+        sub.textContent = 'Set an HTTPS stream URL first (see web-listen.html). Then optionally add now_playing.json or an https API for titles.';
       } else {
-        sub.textContent = useApi ? 'no data from ' + api : 'set ?api=, save local API, or deploy now_playing.json';
+        sub.textContent = useApi ? 'no data from ' + api : 'set ?api= or deploy now_playing.json for titles';
       }
       fill.style.width = '4%';
     }

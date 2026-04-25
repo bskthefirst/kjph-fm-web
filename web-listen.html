@@ -25,27 +25,26 @@
 <body>
   <main>
     <p class="back"><a href="index.html">← back to station</a></p>
-    <h1>Listen on your phone (GitHub Pages + Mac mini)</h1>
-    <p class="lead">The station page is static HTML. Your phone loads it over <strong>HTTPS</strong>, so the stream and API URLs must not be blocked as “mixed content.”</p>
+    <h1>Listen on your phone (no VPN app)</h1>
+    <p class="lead">This listen page is a <strong>normal public website</strong>. You do <strong>not</strong> need Tailscale (or any VPN) on your phone to open it. The only technical rule: the <strong>stream</strong> URL must start with <code>https://</code> because this page is served over HTTPS — otherwise the browser blocks in-page playback.</p>
 
-    <h2>1. HTTPS stream (Tailscale Serve)</h2>
-    <p>On the Mac mini, forward Icecast (port 8000) through Tailscale’s HTTPS proxy so the mount is an <code>https://</code> URL (only on your tailnet unless you use Funnel):</p>
-    <pre>tailscale serve --bg http://127.0.0.1:8000</pre>
-    <p>Then your stream may look like <code>https://suhyun.tailf2c209.ts.net/stream</code> (exact URL is shown by the <code>serve</code> command; use your machine’s MagicDNS name). Open the Tailscale app on the phone so you are on the same tailnet.</p>
+    <h2>1. Give Icecast a public HTTPS URL (Cloudflare)</h2>
+    <p>On the Mac mini, with Icecast already on port 8000, run:</p>
+    <pre>brew install cloudflared
+cloudflared tunnel --url http://127.0.0.1:8000</pre>
+    <p>The command prints a random <code>https://….trycloudflare.com</code> URL. In the station page’s <strong>connection</strong> box, set <strong>Stream URL</strong> to that host with your mount, usually:</p>
+    <pre>https://YOUR-SUBDOMAIN.trycloudflare.com/stream</pre>
+    <p>Tap <strong>save to this device</strong>, then press <strong>play</strong> on the audio bar. Any phone on Wi‑Fi or LTE works — no tailnet.</p>
+    <p>The trycloudflare hostname <strong>changes every time</strong> you restart the command. For a stable link, use a <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-local-tunnel/">named Cloudflare Tunnel</a> (still free for typical personal use).</p>
 
-    <h2>2. Now playing on the static site</h2>
-    <p><code>GET /now-playing</code> on port 8001 is usually <code>http://</code>, which the browser will <em>not</em> fetch from an <code>https://</code> GitHub Page. Options:</p>
-    <ol>
-      <li>Leave API blank and place a <code>now_playing.json</code> next to <code>index.html</code> (updated by your sync from the feeder’s <code>output/now_playing.json</code>, e.g. into your <code>bskthefirst.github.io</code> repo), or</li>
-      <li>Point “Now playing JSON” to a full <code>https://</code> URL that you host, or</li>
-      <li>Expose the API over HTTPS (reverse proxy or tunnel) and paste that base URL in connection settings.</li>
-    </ol>
+    <h2>2. “Now playing” is optional</h2>
+    <p>If you see “now playing unavailable”, audio can still work once the HTTPS stream URL is set. Full options (second tunnel for the API, or hosted <code>now_playing.json</code>) are in the private repo file <code>docs/CLOUDFLARE_PUBLIC_STREAM.md</code> after you clone/pull.</p>
 
     <h2>3. Where this page is hosted</h2>
-    <p>The deployed listen UI is at <strong><a href="https://bskthefirst.github.io/kjph-fm-web/">https://bskthefirst.github.io/kjph-fm-web/</a></strong> (public repo <code>bskthefirst/kjph-fm-web</code> only — station code stays private). From your machine, after editing <code>docs/index.html</code> in the personal-radio repo, run <code>./scripts/sync-public-listen.sh</code> to push updates.</p>
+    <p>Deployed copy: <strong><a href="https://bskthefirst.github.io/kjph-fm-web/">https://bskthefirst.github.io/kjph-fm-web/</a></strong> (static HTML only). Source edits live in the private <code>personal-radio</code> repo under <code>docs/</code>; publish with <code>./scripts/sync-public-listen.sh</code>.</p>
 
-    <h2>4. Bookmark on your phone</h2>
-    <p>Open the deployed <a href="index.html">index</a>, expand <strong>connection</strong>, paste the HTTPS stream URL, save, then add the page to the home screen or bookmarks. Optional: share a link with query parameters, e.g. <code>?stream=https%3A%2F%2F…%2Fstream&amp;np=now_playing.json</code>.</p>
+    <h2>4. Security note</h2>
+    <p>A public tunnel exposes your stream to the internet. Use a strong Icecast password and treat quick-tunnel URLs like temporary passwords.</p>
   </main>
 </body>
 </html>

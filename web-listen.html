@@ -41,8 +41,8 @@
       <li>Expose the API over HTTPS (reverse proxy or tunnel) and paste that base URL in connection settings.</li>
     </ol>
 
-    <h2>3. Enable GitHub Pages</h2>
-    <p>Repository <strong>Settings → Pages → Build and deployment</strong>: source <strong>Deploy from a branch</strong> with folder <code>/docs</code> on <code>main</code>, or use the root of a <code>username.github.io</code> repo and copy these files there. Your site URL will look like <code>https://&lt;user&gt;.github.io/&lt;repo&gt;/</code>.</p>
+    <h2>3. Where this page is hosted</h2>
+    <p>The deployed listen UI is at <strong><a href="https://bskthefirst.github.io/kjph-fm-web/">https://bskthefirst.github.io/kjph-fm-web/</a></strong> (public repo <code>bskthefirst/kjph-fm-web</code> only — station code stays private). From your machine, after editing <code>docs/index.html</code> in the personal-radio repo, run <code>./scripts/sync-public-listen.sh</code> to push updates.</p>
 
     <h2>4. Bookmark on your phone</h2>
     <p>Open the deployed <a href="index.html">index</a>, expand <strong>connection</strong>, paste the HTTPS stream URL, save, then add the page to the home screen or bookmarks. Optional: share a link with query parameters, e.g. <code>?stream=https%3A%2F%2F…%2Fstream&amp;np=now_playing.json</code>.</p>

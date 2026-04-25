@@ -29,7 +29,9 @@
     <p class="lead">This listen page is a <strong>normal public website</strong>. You do <strong>not</strong> need Tailscale (or any VPN) on your phone to open it. The only technical rule: the <strong>stream</strong> URL must start with <code>https://</code> because this page is served over HTTPS — otherwise the browser blocks in-page playback.</p>
 
     <h2>1. Give Icecast a public HTTPS URL (Cloudflare)</h2>
-    <p>On the Mac mini, with Icecast already on port 8000, run:</p>
+    <p>On the Mac mini (Terminal or SSH from your laptop), with Icecast already on port 8000, either run the helper in the station repo after <code>git pull</code>:</p>
+    <pre>chmod +x mac/start_public_quick_tunnel.sh &amp;&amp; ./mac/start_public_quick_tunnel.sh</pre>
+    <p>…or install and run by hand:</p>
     <pre>brew install cloudflared
 cloudflared tunnel --url http://127.0.0.1:8000</pre>
     <p>The command prints a random <code>https://….trycloudflare.com</code> URL. In the station page’s <strong>connection</strong> box, set <strong>Stream URL</strong> to that host with your mount, usually:</p>
